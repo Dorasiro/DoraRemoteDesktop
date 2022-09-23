@@ -1,0 +1,12 @@
+DoraRemoteDesktop.sln
+.vs/ProjectSettings.json
+.vs/
+DoraRemoteDesktopClient/obj/
+DoraRemoteDesktopServer/bin/Debug/OpenCvSharp.dll
+DoraRemoteDesktopServer/bin/
+DoraRemoteDesktopServer/obj/Debug/DoraRemoteDesktopServer.csproj.CoreCompileInputs.cache
+DoraRemoteDesktopServer/obj/
+ImageProcessor/x64/
+packages/
+x64/
+DoraRemoteDesktopClient/bin/
