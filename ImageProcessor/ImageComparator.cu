@@ -72,5 +72,5 @@ int main(void)
 	// ÅŒã‚ÉŒvZŠÔ‚ğ•\¦
 	std::cout << end - start << "[ms]" << std::endl;
 
-	return 0;
+	return sum;
 }
