@@ -5,6 +5,7 @@ using System.ComponentModel;
 using System.Data;
 using System.Drawing;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -15,6 +16,9 @@ namespace DoraRemoteDesktopServer
 {
     public partial class SubForm : Form
     {
+        [DllImport("ImageProcessor.dll")]
+        private static extern int main();
+
         /// <summary>
         /// 取得したイメージを表示するためのPictureBox
         /// </summary>
@@ -765,7 +769,7 @@ namespace DoraRemoteDesktopServer
 
         private void button3_Click(object sender, EventArgs e)
         {
-
+            textBox1.Text = main().ToString();
         }
     }
 }
