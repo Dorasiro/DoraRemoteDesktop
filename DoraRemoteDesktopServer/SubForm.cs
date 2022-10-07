@@ -769,7 +769,100 @@ namespace DoraRemoteDesktopServer
 
         private void button3_Click(object sender, EventArgs e)
         {
-            textBox1.Text = main().ToString();
+            //SendUDP send = new SendUDP("127.0.0.1", 49513);
+            //SendUDP send = new SendUDP("192.168.2.116", 49513);
+            ScreenCapture s = new ScreenCapture(198 / 2, 108 / 2);
+
+            try
+            {
+                if (nowProgress)
+                {
+                    //System.Diagnostics.Debug.WriteLine("skip");
+                    return;
+                }
+
+                nowProgress = true;
+
+                var sw = new System.Diagnostics.Stopwatch();
+                sw.Start();
+
+                var r = s.DoCaptureReturnByte();
+
+                sw.Stop();
+                //System.Diagnostics.Debug.WriteLine("=>" + sw.ElapsedMilliseconds);
+                sw.Start();
+                if (old2 == null)
+                {
+                    for (int y = 0; y < s.VerticalCount - 1; y++)
+                    {
+                        // このループはコストが低いからParallelの方が遅い
+                        for (int x = 0; x < s.HorizonCount + 1; x++)
+                        {
+                            //send.SendScreenCapture(r[y * s.VerticalCount + x], x, y, 0);
+                        }
+                    }
+
+                    old2 = new byte[r.Length][];
+                }
+                else
+                {
+                    //// 画像の重複チェックが重いからParallelの方が早い
+                    //Parallel.For(0, r.GetLength(0), x =>
+                    //{
+                    //    for (int y = 0; y < r.GetLength(1); y++)
+                    //    {
+                    //        if (!ScreenCapture.CompareImage(r[counter], old2[counter]))
+                    //        {
+                    //            send.SendScreenCapture(r[counter], x, y, 0);
+                    //        }
+
+                    //        Interlocked.Increment(ref counter);
+                    //    }
+                    //});
+
+                    for (int y = 0; y < s.VerticalCount - 1; y++)
+                    {
+                        for (int x = 0; x < s.HorizonCount + 1; x++)
+                        {
+                            if (!ScreenCapture.CompareImage(r[y * s.VerticalCount + x], old2[x + y * s.VerticalCount]))
+                            {
+                                //send.SendScreenCapture(r[y * s.VerticalCount + x], x, y, 0);
+                                System.Diagnostics.Debug.WriteLine("(" + x.ToString() + ", " + y.ToString() + ")");
+                            }
+                        }
+                    }
+                }
+
+                // 今使用したBitmap[,] rをoldに入れて次の比較に使う
+                Array.Copy(r, old2, r.Length);
+
+                nowProgress = false;
+
+                sw.Stop();
+                //System.Diagnostics.Debug.WriteLine(sw.ElapsedMilliseconds);
+
+            }
+            catch (Exception exx)
+            {
+
+            }
+        }
+
+        private void button2_Click(object sender, EventArgs e)
+        {
+            ScreenCapture s = new ScreenCapture(198 / 2, 108 / 2);
+            var r = s.DoCaptureReturnByte();
+            if (old2 == null)
+            {
+                old2 = new byte[r.Length][];
+            }
+            else
+            {
+                ScreenCapture.CompareImage(r[0], old2[0]);
+            }
+
+            // 今使用したBitmap[,] rをoldに入れて次の比較に使う
+            Array.Copy(r, old2, r.Length);
         }
     }
 }

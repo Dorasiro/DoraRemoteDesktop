@@ -6,71 +6,104 @@
 #include <time.h>
 
 // GPUで計算する際の関数
-__global__ void gpu_function(float* d_x, float* d_y)
+// __global__はホストから呼ばれてデバイス側で実行される
+// 戻り値はvoidのみ→引数に結果を入れる変数を渡す必要がある　それを呼び出し側から見れないと意味がないからポインタである必要がある
+// C#のbyte型符号なし整数1bitはC++だとunsigned charになるらしい
+// ちなみにcharはsigned charかunsigned charのどちらかにコンパイラが振り分けるから中身がどちらかは自動的に決まるらしい
+// unsigned charは符号なし→0～255　signed charは符号付き→-128 ～ 127
+// ちなみにsigned charはC#だとsbyteになるとか　豆だけどJavaだとこれがbyteらしい　ややこしい
+__global__ void gpu_function(int* result, unsigned char* b1, unsigned char* b2)
 {
 	int i = blockIdx.x * blockDim.x + threadIdx.x;
-	d_y[i] = sin(d_x[i]) * sin(d_x[i]) + cos(d_x[i]) * cos(d_x[i]);
-}
-
-// CPUで計算する際の関数
-void cpu_function(int n, float* x, float* y)
-{
-	for (int i = 0; i < n; i++) {
-		y[i] = sin(x[i]) * sin(x[i]) + cos(x[i]) * cos(x[i]);
-	}
+	result[i] = b1[i] + b2[i];
 }
 
 // main function
-int main(void)
+int main(unsigned char* b1Ptr, unsigned char* b2Ptr, int arrayLength)
 {
-	bool GPU = true;
+	//グリッドの中にブロックがあってその中にスレッドがある
+	// 1ブロック内のスレッド数 最大数が512らしい
+	int threadNum = 512;
 
-	int N = 1000000;
-	float* host_x, * host_y, * dev_x, * dev_y;
-
-	// CPU側の領域確保
-	host_x = (float*)malloc(N * sizeof(float));
-	host_y = (float*)malloc(N * sizeof(float));
-
-	// 乱数値を入力する
-	for (int i = 0; i < N; i++) {
-		host_x[i] = rand();
+	for (int i = 0; i < arrayLength; i++)
+	{
+		int x = b1Ptr[i];
+		std::cout << i << std::endl;
 	}
 
-	int start = clock();
+	// 配列のサイズを配列要素のサイズで割ると配列の要素数が分かるらしい
+	// 32bitのint型が10個あったとしたら配列の大きさが320　要素のサイズが32　割ると10で要素数がわかる、と
+	//int inputSize = sizeof(b1) / sizeof(b1[0]);
+	//int editedSize;
 
-	if (GPU == true) {
+	//std::cout << "in_" << inputSize << std::endl;
 
-		// デバイス(GPU)側の領域確保
-		cudaMalloc(&dev_x, N * sizeof(float));
-		cudaMalloc(&dev_y, N * sizeof(float));
-
-		// CPU⇒GPUのデータコピー
-		cudaMemcpy(dev_x, host_x, N * sizeof(float), cudaMemcpyHostToDevice);
-
-		// GPUで計算
-		gpu_function <<<(N + 255) / 256, 256 >>> (dev_x, dev_y);
-
-		// GPU⇒CPUのデータコピー
-		cudaMemcpy(host_y, dev_y, N * sizeof(float), cudaMemcpyDeviceToHost);
-
-	}
-	else {
-		// CPUで計算
-		cpu_function(N, host_x, host_y);
+	// 数がスレッド数の倍数じゃないときは調整する
+	/*if (inputSize % threadNum != 0)
+	{
+		editedSize = inputSize % threadNum;
 	}
 
-	int end = clock();
+	std::cout << "ed_" << editedSize << std::endl;*/
 
-	// 計算が正しく行われているか確認
-	float sum = 0.0f;
-	for (int j = 0; j < N; j++) {
-		sum += host_y[j];
-	}
-	std::cout << sum << std::endl;
+	//unsigned char* e1 = new unsigned char[editedSize];
+	//unsigned char* e2 = new unsigned char[editedSize];
 
-	// 最後に計算時間を表示
-	std::cout << end - start << "[ms]" << std::endl;
+	// 大きさを調整した後の配列に要素をコピーする
+	//for (int i = 0; i <inputSize ; i++)
+	//{
+	//	e1[i] = b1[i];
+	//	e2[i] = b2[i];
+	//}
 
-	return sum;
+	//// 空いている部分を0で埋める
+	//for (int i = 0; i < editedSize - inputSize; i++)
+	//{
+	//	// 0～inputSize-1までは既に代入済み　残りの部分に入れていく
+	//	e1[i + inputSize -1] = 0;
+	//	e2[i + inputSize -1] = 0;
+	//}
+
+	//// 結果を入れるための変数
+	//// 配列の大きさは定数じゃないとダメらしい
+	//int* result = new int[editedSize];
+
+	//// デバイス側の配列を用意
+	//int* d_result = new int[editedSize];
+	//unsigned char* d_e1 = new unsigned char[editedSize];
+	//unsigned char* d_e2 = new unsigned char[editedSize];
+
+	//// デバイスのメモリを確保
+	//cudaMalloc(&d_result, editedSize * sizeof(int));
+	//cudaMalloc(&d_e1, editedSize * sizeof(unsigned char));
+	//cudaMalloc(&d_e2, editedSize * sizeof(unsigned char));
+
+	//// ホスト側の配列をデバイス側にコピー
+	//cudaMemcpy(d_result, result, editedSize * sizeof(int), cudaMemcpyHostToDevice);
+	//cudaMemcpy(d_e1, e1, editedSize * sizeof(unsigned char), cudaMemcpyHostToDevice);
+	//cudaMemcpy(d_e2, e2, editedSize * sizeof(unsigned char), cudaMemcpyHostToDevice);
+
+	//// ブロックの大きさを決める
+	//dim3 block(inputSize / threadNum, 1);
+	//// グリッドの大きさを決める
+	//dim3 grid(1, 1);
+
+	//gpu_function <<<grid, block>>> (d_result, d_e1, d_e2);
+
+	//int r;
+	//for (int i = 0; i < editedSize; i++)
+	//{
+	//	r += result[i];
+	//}
+
+	// newしたら必ずdeleteする、と
+	/*delete[] e1;
+	delete[] e2;*/
+	/*delete[] d_e1;
+	delete[] d_e2;
+	delete[] result;
+	delete[] d_result;*/
+
+	return 0;
+	//return r;
 }

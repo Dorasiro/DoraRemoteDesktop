@@ -12,6 +12,9 @@ namespace DoraRemoteDesktopServer
 {
     class ScreenCapture
     {
+        [DllImport("ImageProcessor.dll")]
+        private static extern int main(IntPtr b1Ptr, IntPtr b2Ptr, int arrayLength);
+
         private int sizeX;
         private int sizeY;
 
@@ -513,35 +516,67 @@ namespace DoraRemoteDesktopServer
             return hash1.SequenceEqual(hash2);
         }
 
+        //public static bool CompareImage(byte[] b1, byte[] b2)
+        //{
+        //    // MD5を使用するパターンとbyteごとにXORで比較していくパターンを比較したところ
+        //    // MD5 ：57345ms
+        //    // XOR ：33492ms
+        //    // でXORの方が高速っぽい　あとMD5は何故か分からないけど使用メモリがめっちゃ増えていく
+        //    // GCが作動しないように作ればMD5の方が早いのかもしれない
+
+
+        //    // 大きさが違う場合はfalse
+        //    if(b1.Length != b2.Length)
+        //    {
+        //        return false;
+        //    }
+
+        //    //System.Security.Cryptography.MD5CryptoServiceProvider md5 =
+        //    //    new System.Security.Cryptography.MD5CryptoServiceProvider();
+
+        //    //return md5.ComputeHash(b1).SequenceEqual(md5.ComputeHash(b2));
+
+        //    for (int i = 0; i < b1.Length; i++)
+        //    {
+        //        if ((b1[i] ^ b2[i]) != 0)
+        //        {
+        //            return false;
+        //        }
+        //    }
+
+        //    return true;
+        //}
+
         public static bool CompareImage(byte[] b1, byte[] b2)
         {
-            // MD5を使用するパターンとbyteごとにXORで比較していくパターンを比較したところ
-            // MD5 ：57345ms
-            // XOR ：33492ms
-            // でXORの方が高速っぽい　あとMD5は何故か分からないけど使用メモリがめっちゃ増えていく
-            // GCが作動しないように作ればMD5の方が早いのかもしれない
-
-
             // 大きさが違う場合はfalse
-            if(b1.Length != b2.Length)
+            if (b1.Length != b2.Length)
             {
                 return false;
             }
 
-            //System.Security.Cryptography.MD5CryptoServiceProvider md5 =
-            //    new System.Security.Cryptography.MD5CryptoServiceProvider();
+            // 大きさが同じことはチェック済みだからb1だけすれば良い
+            // これは要素数(Length)じゃなくてbit単位の大きさ
+            // https://shibuya24.info/entry/cs2cpp_array
+            int size = Marshal.SizeOf(typeof(byte)) * b1.Length;
 
-            //return md5.ComputeHash(b1).SequenceEqual(md5.ComputeHash(b2));
+            IntPtr b1Ptr = Marshal.AllocCoTaskMem(b1.Length);
+            IntPtr b2Ptr = Marshal.AllocCoTaskMem(b2.Length);
 
-            for (int i = 0; i < b1.Length; i++)
+            Marshal.Copy(b1, 0, b1Ptr, size);
+            Marshal.Copy(b2, 0, b2Ptr, size);
+
+            var result = main(b1Ptr, b2Ptr, b1.Length);
+
+            Marshal.FreeCoTaskMem(b1Ptr);
+            Marshal.FreeCoTaskMem(b2Ptr);
+
+            if (result == 0)
             {
-                if ((b1[i] ^ b2[i]) != 0)
-                {
-                    return false;
-                }
+                return true;
             }
 
-            return true;
+            return false;
         }
     }
 }
